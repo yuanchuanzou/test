@@ -1,11 +1,18 @@
-# test
-## 托尔斯泰2
-test3
-再测试一下
-<<<<<<< HEAD
-haha
-ewrwer
-3245
-ksdjfiwer
-=======
->>>>>>> 40bf4af4d6404c9948f8cf41c4feb2bb989d1f44
+# FRB20220529 Lomb-Scargle Analysis
+
+This repository provides a small script to compute Lomb-Scargle periodograms for
+the DM and RM columns in `FRB20220529_TableS5.csv`, both without errors and with
+measurement uncertainties. The script parses the table header row (the commented
+`#MJD,...` line) and extracts values plus uncertainties from entries like
+`253.5 ± 1.9`.
+
+## Usage
+
+```bash
+python lsp_analysis.py FRB20220529_TableS5.csv --output-dir outputs
+```
+
+The script writes two plots:
+
+- `outputs/dm_lsp.png`
+- `outputs/rm_lsp.png`
