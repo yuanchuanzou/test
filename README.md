@@ -2,7 +2,9 @@
 
 This repository provides a small script to compute Lomb-Scargle periodograms for
 the DM and RM columns in `FRB20220529_TableS5.csv`, both without errors and with
-measurement uncertainties.
+measurement uncertainties. The script parses the table header row (the commented
+`#MJD,...` line) and extracts values plus uncertainties from entries like
+`253.5 ± 1.9`.
 
 ## Usage
 
@@ -14,4 +16,3 @@ The script writes two plots:
 
 - `outputs/dm_lsp.png`
 - `outputs/rm_lsp.png`
-
