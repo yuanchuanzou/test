@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>五子棋</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f0e6d3;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+    h1 { margin-bottom: 12px; font-size: 28px; color: #4a3000; }
+    #status {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: #333;
+      height: 28px;
+    }
+    .stone-indicator {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 4px;
+      border: 1px solid #888;
+    }
+    #canvas {
+      cursor: pointer;
+      border: 2px solid #7a5c00;
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    #restart {
+      margin-top: 16px;
+      padding: 8px 28px;
+      font-size: 16px;
+      background: #c8860a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #restart:hover { background: #a06000; }
+  </style>
+</head>
+<body>
+  <h1>五子棋</h1>
+  <div id="status"></div>
+  <canvas id="canvas"></canvas>
+  <button id="restart">重新开始</button>
+
+  <script>
+    const ROWS = 15;
+    const COLS = 15;
+    const CELL = 40;       // 格子大小（px）
+    const MARGIN = 30;     // 边距
+    const SIZE = MARGIN * 2 + CELL * (COLS - 1);
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+
+    let board, currentPlayer, gameOver;
+
+    function init() {
+      board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      currentPlayer = 1; // 1=黑, 2=白
+      gameOver = false;
+      drawBoard();
+      updateStatus();
+    }
+
+    // ---- 绘制 ----
+    function drawBoard() {
+      // 背景
+      ctx.fillStyle = '#dcb870';
+      ctx.fillRect(0, 0, SIZE, SIZE);
+
+      // 网格线
+      ctx.strokeStyle = '#8a6200';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < ROWS; i++) {
+        const y = MARGIN + i * CELL;
+        ctx.beginPath();
+        ctx.moveTo(MARGIN, y);
+        ctx.lineTo(MARGIN + (COLS - 1) * CELL, y);
+        ctx.stroke();
+      }
+      for (let j = 0; j < COLS; j++) {
+        const x = MARGIN + j * CELL;
+        ctx.beginPath();
+        ctx.moveTo(x, MARGIN);
+        ctx.lineTo(x, MARGIN + (ROWS - 1) * CELL);
+        ctx.stroke();
+      }
+
+      // 星位点（天元 + 8个星）
+      const stars = [[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]];
+      ctx.fillStyle = '#8a6200';
+      stars.forEach(([r, c]) => {
+        ctx.beginPath();
+        ctx.arc(MARGIN + c * CELL, MARGIN + r * CELL, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 棋子
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c]) drawStone(r, c, board[r][c]);
+        }
+      }
+    }
+
+    function drawStone(r, c, player) {
+      const x = MARGIN + c * CELL;
+      const y = MARGIN + r * CELL;
+      const radius = CELL * 0.44;
+
+      const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.05, x, y, radius);
+      if (player === 1) {
+        grad.addColorStop(0, '#888');
+        grad.addColorStop(1, '#000');
+      } else {
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(1, '#bbb');
+      }
+
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = player === 1 ? '#000' : '#999';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // ---- 胜负判断 ----
+    function checkWin(r, c, player) {
+      const directions = [[0,1],[1,0],[1,1],[1,-1]];
+      for (const [dr, dc] of directions) {
+        let count = 1;
+        for (let d = 1; d <= 4; d++) {
+          const nr = r + dr * d, nc = c + dc * d;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== player) break;
+          count++;
+        }
+        for (let d = 1; d <= 4; d++) {
+          const nr = r - dr * d, nc = c - dc * d;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== player) break;
+          count++;
+        }
+        if (count >= 5) return true;
+      }
+      return false;
+    }
+
+    // ---- 状态栏 ----
+    function updateStatus(winner) {
+      const status = document.getElementById('status');
+      if (winner) {
+        const color = winner === 1 ? '#000' : '#fff';
+        const bg = winner === 1 ? '#000' : '#aaa';
+        status.innerHTML = `<span class="stone-indicator" style="background:${bg}"></span>${winner === 1 ? '黑棋' : '白棋'} 获胜！🎉`;
+      } else {
+        const bg = currentPlayer === 1 ? '#000' : '#eee';
+        const border = currentPlayer === 2 ? '1px solid #888' : 'none';
+        status.innerHTML = `轮到 <span class="stone-indicator" style="background:${bg};border:${border}"></span>${currentPlayer === 1 ? '黑棋' : '白棋'} 落子`;
+      }
+    }
+
+    // ---- 点击落子 ----
+    canvas.addEventListener('click', e => {
+      if (gameOver) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const px = (e.clientX - rect.left) * scaleX;
+      const py = (e.clientY - rect.top) * scaleY;
+
+      const c = Math.round((px - MARGIN) / CELL);
+      const r = Math.round((py - MARGIN) / CELL);
+
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+      if (board[r][c] !== 0) return;
+
+      board[r][c] = currentPlayer;
+      drawBoard();
+
+      if (checkWin(r, c, currentPlayer)) {
+        gameOver = true;
+        updateStatus(currentPlayer);
+        return;
+      }
+
+      currentPlayer = currentPlayer === 1 ? 2 : 1;
+      updateStatus();
+    });
+
+    document.getElementById('restart').addEventListener('click', init);
+
+    init();
+  </script>
+</body>
+</html>
